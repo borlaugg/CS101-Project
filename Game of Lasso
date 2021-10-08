@@ -296,7 +296,7 @@ void Coin::initCoin() {
 void Coin::resetCoin() {
   double coin_speed = COIN_SPEED;
   double coin_angle_deg = COIN_ANGLE_DEG;
-  coin_ax = 0;
+  coin_ax = aax;
   coin_ay = COIN_G;
   bool paused = true, rtheta = true;
   reset_all(coin_start_x, coin_start_y, coin_speed, coin_angle_deg, coin_ax, coin_ay, paused, rtheta);
@@ -333,16 +333,12 @@ void Bomb::initbomb() {
 void Bomb::resetbomb(){
   double bomb_speed = BOMB_SPEED;
   double bomb_angle_deg = COIN_ANGLE_DEG;
-  bomb_ax = 0;
+  bomb_ax = aax;
   bomb_ay = COIN_G;
   bool paused = true, rtheta = true;
   reset_all(bomb_start_x, bomb_start_y, bomb_speed, bomb_angle_deg, bomb_ax, bomb_ay, paused, rtheta);
 }
-
-
-
 //lasso.cpp
-
 void Lasso::draw_lasso_band() {
   double len = (release_speed/MAX_RELEASE_SPEED)*LASSO_BAND_LENGTH;
   double arad = release_angle_deg*PI/180.0;
@@ -399,6 +395,7 @@ void Lasso::yank() {
     num_coins+=2;
     the_bonus->resetBonus();
     the_bonus=NULL;
+    num_bonus=true;
   }
 } // End Lasso::yank()
 
@@ -478,7 +475,7 @@ main_program {
 
   initCanvas("Lasso", WINDOW_X, WINDOW_Y);
   int stepCount = 0;
-  int level=5;
+  int level=1;
   int score=0;
   float stepTime = STEP_TIME;
   float runTime = -1; // sec; -ve means infinite
@@ -536,7 +533,9 @@ main_program {
   factor=7.0/16;
   Bomb bomb(bomb_speed,coin_angle_deg, coin_ax, coin_ay, paused, rtheta);
   factor=9.0/16;
+  aax=-10;
   Bomb bomb1(bomb_speed1,coin_angle_deg, coin_ax, coin_ay, paused, rtheta);
+  aax=0;
   factor=10.0/16;
   Coin coin2(coin_speed, coin_angle_deg, aax, coin_ay, paused, rtheta);
   aax=-20;
@@ -664,23 +663,43 @@ main_program {
      }
     }
     if(coin.getYPos() > PLAY_Y_HEIGHT) {
-      coin.resetCoin();
-      last_coin_jump_end = currTime;
+    if(level>5)
+      aax=10;
+     coin.resetCoin();
+     if(level==6){
+     aax=-10;
+     coin2.resetCoin();
+     }
+     aax=0;
+     last_coin_jump_end = currTime;
 
     }
     if(coin2.getYPos() > PLAY_Y_HEIGHT) {
-      coin2.resetCoin();
-      last_coin_jump_end = currTime;
+     if(level>5)
+      aax=-10;
+     coin2.resetCoin();
+     if(level==6){
+     aax=10;
+     coin.resetCoin();
+     }
+     aax=0;
+
+     last_coin_jump_end = currTime;
     }
     if(level>1){
      if(bomb.getYPos() > PLAY_Y_HEIGHT) {
+      if(level>5)
+       aax=10;
       bomb.resetbomb();
+      aax=0;
       last_bomb_jump_end = currTime;
      }
     }
     if(level>5){
      if(bomb1.getYPos() > PLAY_Y_HEIGHT) {
+      aax=-10;
       bomb1.resetbomb();
+      aax=0;
       last_bomb_jump_end = currTime;
      }
     }
@@ -690,7 +709,8 @@ main_program {
       bonus.resetBonus();
       aax=0;
       if(lasso.caught()){
-       lasso.updateb(true);
+       bool z=true;
+       lasso.updateb(z);
       }
       last_bomb_jump_end = currTime;
      }
@@ -699,22 +719,30 @@ main_program {
     {aax=-20;
      bonus.resetBonus();
     aax=0;}
-    if(level<5)
-      bomb1.resetbomb();
+    if(level<5){
+     aax=-10;
+     bomb1.resetbomb();
+     aax=0;
+    }
+    if(level<=5){
+    bomb1.resetbomb();
+    }
     score=max(score,lasso.getNumCoins());
-    if(!lasso.checkbonus())
-     level=lasso.getNumCoins()+1;
+    if(lasso.checkbonus()){
+     level=lasso.getNumCoins();}
     else
-     level=lasso.getNumCoins()-2;
+     level=lasso.getNumCoins()+1;
     if(lasso.getNumCoins()<0){
      Text t1(WINDOW_X/2,WINDOW_Y/2,"GAME OVER");
      t1.imprint();
-     wait(stepTime);
+     wait(5);
      exit(0);
     }
     if(level==11){
      Text t2(WINDOW_X/2,WINDOW_Y/2,"GAME OVER");
+     Text t3(WINDOW_X/2,WINDOW_Y/2+20,Score);
      t2.imprint();
+     t3.imprint();
      }
     sprintf(coinScoreStr, "Coins: %d", lasso.getNumCoins());
     sprintf(Level, "level: %d", level);
@@ -724,7 +752,9 @@ main_program {
     scr.setMessage(Score);
     stepCount++;
     currTime += stepTime;
+    aax=0;
     wait(stepTime);
   } // End for while
   wait(3);
 } // End main_program
+
